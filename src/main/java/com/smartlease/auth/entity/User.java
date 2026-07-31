@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class User extends BaseEntity {
-    private String fullname;
+    private String fullName;
     private String email;
     private String password;
     @Enumerated(EnumType.STRING)
