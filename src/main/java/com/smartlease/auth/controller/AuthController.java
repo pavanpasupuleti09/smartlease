@@ -1,5 +1,7 @@
 package com.smartlease.auth.controller;
 
+import com.smartlease.auth.dto.AuthResponse;
+import com.smartlease.auth.dto.LoginRequest;
 import com.smartlease.auth.dto.RegistrationRequest;
 import com.smartlease.auth.service.UserService;
 import org.springframework.web.bind.annotation.*;
@@ -20,5 +22,9 @@ public class AuthController {
         userService.registerUser(request);
 
         return "User Registered Successfully";
+    }
+    @PostMapping("/login")
+    public AuthResponse login(@RequestBody LoginRequest request) {
+        return userService.login(request);
     }
 }
