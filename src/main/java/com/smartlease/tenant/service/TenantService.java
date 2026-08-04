@@ -16,4 +16,5 @@ public interface TenantService {
     TenantResponse updateTenant(Long id, TenantRequest request);
 
     void deleteTenant(Long id);
+
 }

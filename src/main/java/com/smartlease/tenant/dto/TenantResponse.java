@@ -14,4 +14,5 @@ public class TenantResponse {
     private String email;
     private String phone;
     private String aadhaarNumber;
+
 }

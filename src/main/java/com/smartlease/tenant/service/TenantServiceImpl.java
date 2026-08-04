@@ -89,6 +89,7 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public void deleteTenant(Long id) {
 
+
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tenant not found"));
 

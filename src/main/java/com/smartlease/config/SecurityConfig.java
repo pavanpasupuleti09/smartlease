@@ -24,6 +24,7 @@ public class SecurityConfig {
                                 "/api/tenants/**"
                         ).permitAll()
                         .anyRequest().authenticated()
+
                 )
 
                 .httpBasic(Customizer.withDefaults());
