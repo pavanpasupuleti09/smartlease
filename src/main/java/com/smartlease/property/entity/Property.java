@@ -1,6 +1,8 @@
 package com.smartlease.property.entity;
 
 import com.smartlease.common.BaseEntity;
+import com.smartlease.property.enums.Furnishing;
+import com.smartlease.property.enums.PropertyType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,4 +32,16 @@ public class Property extends BaseEntity {
     private Double monthlyRent;
 
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    private PropertyType propertyType;
+
+    private Integer bedrooms;
+
+    private Integer bathrooms;
+
+    @Enumerated(EnumType.STRING)
+    private Furnishing furnishing;
+
+    private Double areaSqft;
 }

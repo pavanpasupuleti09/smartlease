@@ -30,6 +30,11 @@ public class PropertyServiceImpl implements PropertyService {
         property.setTotalUnits(request.getTotalUnits());
         property.setMonthlyRent(request.getMonthlyRent());
         property.setDescription(request.getDescription());
+        property.setPropertyType(request.getPropertyType());
+        property.setBedrooms(request.getBedrooms());
+        property.setBathrooms(request.getBathrooms());
+        property.setFurnishing(request.getFurnishing());
+        property.setAreaSqft(request.getAreaSqft());
 
         Property savedProperty = propertyRepository.save(property);
 
@@ -42,7 +47,12 @@ public class PropertyServiceImpl implements PropertyService {
                 savedProperty.getPincode(),
                 savedProperty.getTotalUnits(),
                 savedProperty.getMonthlyRent(),
-                savedProperty.getDescription()
+                savedProperty.getDescription(),
+                savedProperty.getPropertyType(),
+                savedProperty.getBedrooms(),
+                savedProperty.getBathrooms(),
+                savedProperty.getFurnishing(),
+                savedProperty.getAreaSqft()
         );
     }
 
@@ -60,10 +70,16 @@ public class PropertyServiceImpl implements PropertyService {
                         property.getPincode(),
                         property.getTotalUnits(),
                         property.getMonthlyRent(),
-                        property.getDescription()
+                        property.getDescription(),
+                        property.getPropertyType(),
+                        property.getBedrooms(),
+                        property.getBathrooms(),
+                        property.getFurnishing(),
+                        property.getAreaSqft()
                 ))
                 .toList();
     }
+
     @Override
     public PropertyResponse getPropertyById(Long id) {
 
@@ -79,9 +95,15 @@ public class PropertyServiceImpl implements PropertyService {
                 property.getPincode(),
                 property.getTotalUnits(),
                 property.getMonthlyRent(),
-                property.getDescription()
+                property.getDescription(),
+                property.getPropertyType(),
+                property.getBedrooms(),
+                property.getBathrooms(),
+                property.getFurnishing(),
+                property.getAreaSqft()
         );
     }
+
     @Override
     public PropertyResponse updateProperty(Long id, PropertyRequest request) {
 
@@ -96,6 +118,11 @@ public class PropertyServiceImpl implements PropertyService {
         property.setTotalUnits(request.getTotalUnits());
         property.setMonthlyRent(request.getMonthlyRent());
         property.setDescription(request.getDescription());
+        property.setPropertyType(request.getPropertyType());
+        property.setBedrooms(request.getBedrooms());
+        property.setBathrooms(request.getBathrooms());
+        property.setFurnishing(request.getFurnishing());
+        property.setAreaSqft(request.getAreaSqft());
 
         Property updatedProperty = propertyRepository.save(property);
 
@@ -108,9 +135,15 @@ public class PropertyServiceImpl implements PropertyService {
                 updatedProperty.getPincode(),
                 updatedProperty.getTotalUnits(),
                 updatedProperty.getMonthlyRent(),
-                updatedProperty.getDescription()
+                updatedProperty.getDescription(),
+                updatedProperty.getPropertyType(),
+                updatedProperty.getBedrooms(),
+                updatedProperty.getBathrooms(),
+                updatedProperty.getFurnishing(),
+                updatedProperty.getAreaSqft()
         );
     }
+
     @Override
     public void deleteProperty(Long id) {
 
@@ -119,6 +152,4 @@ public class PropertyServiceImpl implements PropertyService {
 
         propertyRepository.delete(property);
     }
-
-
 }

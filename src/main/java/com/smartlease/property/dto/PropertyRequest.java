@@ -1,5 +1,7 @@
 package com.smartlease.property.dto;
 
+import com.smartlease.property.enums.Furnishing;
+import com.smartlease.property.enums.PropertyType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,4 +17,9 @@ public class PropertyRequest {
     private Integer totalUnits;
     private Double monthlyRent;
     private String description;
+    private PropertyType propertyType;
+    private Integer bedrooms;
+    private Integer bathrooms;
+    private Furnishing furnishing;
+    private Double areaSqft;
 }
