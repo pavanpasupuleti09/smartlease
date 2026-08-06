@@ -22,4 +22,5 @@ public class PropertyRequest {
     private Integer bathrooms;
     private Furnishing furnishing;
     private Double areaSqft;
+    private Long ownerId;
 }

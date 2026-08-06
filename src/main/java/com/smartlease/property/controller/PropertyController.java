@@ -26,6 +26,12 @@ public class PropertyController {
     public List<PropertyResponse> getAllProperties() {
         return propertyService.getAllProperties();
     }
+
+    @GetMapping("/owner/{ownerId}")
+    public List<PropertyResponse> getPropertiesByOwner(@PathVariable Long ownerId) {
+        return propertyService.getPropertiesByOwner(ownerId);
+    }
+
     @GetMapping("/{id}")
     public PropertyResponse getPropertyById(@PathVariable Long id) {
         return propertyService.getPropertyById(id);

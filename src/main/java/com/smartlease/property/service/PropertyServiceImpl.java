@@ -1,5 +1,7 @@
 package com.smartlease.property.service;
 
+import com.smartlease.auth.entity.User;
+import com.smartlease.auth.repository.UserRepository;
 import com.smartlease.property.dto.PropertyRequest;
 import com.smartlease.property.dto.PropertyResponse;
 import com.smartlease.property.entity.Property;
@@ -12,9 +14,11 @@ import java.util.List;
 public class PropertyServiceImpl implements PropertyService {
 
     private final PropertyRepository propertyRepository;
+    private final UserRepository userRepository;
 
-    public PropertyServiceImpl(PropertyRepository propertyRepository) {
+    public PropertyServiceImpl(PropertyRepository propertyRepository, UserRepository userRepository) {
         this.propertyRepository = propertyRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -35,25 +39,11 @@ public class PropertyServiceImpl implements PropertyService {
         property.setBathrooms(request.getBathrooms());
         property.setFurnishing(request.getFurnishing());
         property.setAreaSqft(request.getAreaSqft());
+        property.setOwner(resolveOwner(request.getOwnerId()));
 
         Property savedProperty = propertyRepository.save(property);
 
-        return new PropertyResponse(
-                savedProperty.getId(),
-                savedProperty.getPropertyName(),
-                savedProperty.getAddress(),
-                savedProperty.getCity(),
-                savedProperty.getState(),
-                savedProperty.getPincode(),
-                savedProperty.getTotalUnits(),
-                savedProperty.getMonthlyRent(),
-                savedProperty.getDescription(),
-                savedProperty.getPropertyType(),
-                savedProperty.getBedrooms(),
-                savedProperty.getBathrooms(),
-                savedProperty.getFurnishing(),
-                savedProperty.getAreaSqft()
-        );
+        return toResponse(savedProperty);
     }
 
     @Override
@@ -61,22 +51,7 @@ public class PropertyServiceImpl implements PropertyService {
 
         return propertyRepository.findAll()
                 .stream()
-                .map(property -> new PropertyResponse(
-                        property.getId(),
-                        property.getPropertyName(),
-                        property.getAddress(),
-                        property.getCity(),
-                        property.getState(),
-                        property.getPincode(),
-                        property.getTotalUnits(),
-                        property.getMonthlyRent(),
-                        property.getDescription(),
-                        property.getPropertyType(),
-                        property.getBedrooms(),
-                        property.getBathrooms(),
-                        property.getFurnishing(),
-                        property.getAreaSqft()
-                ))
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -86,22 +61,7 @@ public class PropertyServiceImpl implements PropertyService {
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property Not Found"));
 
-        return new PropertyResponse(
-                property.getId(),
-                property.getPropertyName(),
-                property.getAddress(),
-                property.getCity(),
-                property.getState(),
-                property.getPincode(),
-                property.getTotalUnits(),
-                property.getMonthlyRent(),
-                property.getDescription(),
-                property.getPropertyType(),
-                property.getBedrooms(),
-                property.getBathrooms(),
-                property.getFurnishing(),
-                property.getAreaSqft()
-        );
+        return toResponse(property);
     }
 
     @Override
@@ -123,25 +83,11 @@ public class PropertyServiceImpl implements PropertyService {
         property.setBathrooms(request.getBathrooms());
         property.setFurnishing(request.getFurnishing());
         property.setAreaSqft(request.getAreaSqft());
+        property.setOwner(resolveOwner(request.getOwnerId()));
 
         Property updatedProperty = propertyRepository.save(property);
 
-        return new PropertyResponse(
-                updatedProperty.getId(),
-                updatedProperty.getPropertyName(),
-                updatedProperty.getAddress(),
-                updatedProperty.getCity(),
-                updatedProperty.getState(),
-                updatedProperty.getPincode(),
-                updatedProperty.getTotalUnits(),
-                updatedProperty.getMonthlyRent(),
-                updatedProperty.getDescription(),
-                updatedProperty.getPropertyType(),
-                updatedProperty.getBedrooms(),
-                updatedProperty.getBathrooms(),
-                updatedProperty.getFurnishing(),
-                updatedProperty.getAreaSqft()
-        );
+        return toResponse(updatedProperty);
     }
 
     @Override
@@ -151,5 +97,41 @@ public class PropertyServiceImpl implements PropertyService {
                 .orElseThrow(() -> new RuntimeException("Property not found"));
 
         propertyRepository.delete(property);
+    }
+
+    @Override
+    public List<PropertyResponse> getPropertiesByOwner(Long ownerId) {
+
+        return propertyRepository.findByOwnerId(ownerId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private User resolveOwner(Long ownerId) {
+        return userRepository.findById(ownerId)
+                .orElseThrow(() -> new RuntimeException("Owner Not Found"));
+    }
+
+    private PropertyResponse toResponse(Property property) {
+
+        return new PropertyResponse(
+                property.getId(),
+                property.getPropertyName(),
+                property.getAddress(),
+                property.getCity(),
+                property.getState(),
+                property.getPincode(),
+                property.getTotalUnits(),
+                property.getMonthlyRent(),
+                property.getDescription(),
+                property.getPropertyType(),
+                property.getBedrooms(),
+                property.getBathrooms(),
+                property.getFurnishing(),
+                property.getAreaSqft(),
+                property.getOwner() != null ? property.getOwner().getId() : null,
+                property.getOwner() != null ? property.getOwner().getFullName() : null
+        );
     }
 }

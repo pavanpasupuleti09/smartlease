@@ -1,5 +1,6 @@
 package com.smartlease.property.entity;
 
+import com.smartlease.auth.entity.User;
 import com.smartlease.common.BaseEntity;
 import com.smartlease.property.enums.Furnishing;
 import com.smartlease.property.enums.PropertyType;
@@ -44,4 +45,8 @@ public class Property extends BaseEntity {
     private Furnishing furnishing;
 
     private Double areaSqft;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private User owner;
 }

@@ -10,6 +10,7 @@ public interface PropertyService {
     PropertyResponse createProperty(PropertyRequest request);
 
     List<PropertyResponse> getAllProperties();
+    List<PropertyResponse> getPropertiesByOwner(Long ownerId);
     PropertyResponse getPropertyById(Long id);
     PropertyResponse updateProperty(Long id, PropertyRequest request);
     void deleteProperty(Long id);

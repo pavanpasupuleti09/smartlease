@@ -25,4 +25,6 @@ public class PropertyResponse {
     private Integer bathrooms;
     private Furnishing furnishing;
     private Double areaSqft;
+    private Long ownerId;
+    private String ownerName;
 }
