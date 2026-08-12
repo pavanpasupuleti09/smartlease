@@ -1,6 +1,7 @@
 package com.smartlease.lease.entity;
 
 import com.smartlease.common.BaseEntity;
+import com.smartlease.lease.enums.LeaseStatus;
 import com.smartlease.property.entity.Property;
 import com.smartlease.tenant.entity.Tenant;
 import jakarta.persistence.*;
@@ -30,4 +31,7 @@ public class Lease extends BaseEntity {
     private Double monthlyRent;
 
     private Double securityDeposit;
+
+    @Enumerated(EnumType.STRING)
+    private LeaseStatus status = LeaseStatus.ACTIVE;
 }

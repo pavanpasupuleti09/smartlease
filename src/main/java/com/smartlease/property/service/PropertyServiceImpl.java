@@ -5,6 +5,7 @@ import com.smartlease.auth.repository.UserRepository;
 import com.smartlease.property.dto.PropertyRequest;
 import com.smartlease.property.dto.PropertyResponse;
 import com.smartlease.property.entity.Property;
+import com.smartlease.property.enums.PropertyStatus;
 import com.smartlease.property.repository.PropertyRepository;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,7 @@ public class PropertyServiceImpl implements PropertyService {
         property.setPincode(request.getPincode());
         property.setTotalUnits(request.getTotalUnits());
         property.setMonthlyRent(request.getMonthlyRent());
+        property.setSecurityDeposit(request.getSecurityDeposit());
         property.setDescription(request.getDescription());
         property.setPropertyType(request.getPropertyType());
         property.setBedrooms(request.getBedrooms());
@@ -77,6 +79,7 @@ public class PropertyServiceImpl implements PropertyService {
         property.setPincode(request.getPincode());
         property.setTotalUnits(request.getTotalUnits());
         property.setMonthlyRent(request.getMonthlyRent());
+        property.setSecurityDeposit(request.getSecurityDeposit());
         property.setDescription(request.getDescription());
         property.setPropertyType(request.getPropertyType());
         property.setBedrooms(request.getBedrooms());
@@ -124,6 +127,7 @@ public class PropertyServiceImpl implements PropertyService {
                 property.getPincode(),
                 property.getTotalUnits(),
                 property.getMonthlyRent(),
+                property.getSecurityDeposit(),
                 property.getDescription(),
                 property.getPropertyType(),
                 property.getBedrooms(),
@@ -131,7 +135,8 @@ public class PropertyServiceImpl implements PropertyService {
                 property.getFurnishing(),
                 property.getAreaSqft(),
                 property.getOwner() != null ? property.getOwner().getId() : null,
-                property.getOwner() != null ? property.getOwner().getFullName() : null
+                property.getOwner() != null ? property.getOwner().getFullName() : null,
+                property.getStatus() != null ? property.getStatus() : PropertyStatus.AVAILABLE
         );
     }
 }

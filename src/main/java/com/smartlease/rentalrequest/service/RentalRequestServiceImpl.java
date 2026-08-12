@@ -3,14 +3,20 @@ package com.smartlease.rentalrequest.service;
 import com.smartlease.auth.entity.User;
 import com.smartlease.auth.enums.Role;
 import com.smartlease.auth.repository.UserRepository;
+import com.smartlease.lease.dto.LeaseRequest;
+import com.smartlease.lease.enums.LeaseStatus;
 import com.smartlease.lease.repository.LeaseRepository;
+import com.smartlease.lease.service.LeaseService;
 import com.smartlease.property.entity.Property;
+import com.smartlease.property.enums.PropertyStatus;
 import com.smartlease.property.repository.PropertyRepository;
 import com.smartlease.rentalrequest.dto.RentalRequestRequest;
 import com.smartlease.rentalrequest.dto.RentalRequestResponse;
 import com.smartlease.rentalrequest.entity.RentalRequest;
 import com.smartlease.rentalrequest.enums.RentalRequestStatus;
 import com.smartlease.rentalrequest.repository.RentalRequestRepository;
+import com.smartlease.tenant.entity.Tenant;
+import com.smartlease.tenant.repository.TenantRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,15 +31,21 @@ public class RentalRequestServiceImpl implements RentalRequestService {
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final LeaseRepository leaseRepository;
+    private final TenantRepository tenantRepository;
+    private final LeaseService leaseService;
 
     public RentalRequestServiceImpl(RentalRequestRepository rentalRequestRepository,
                                     UserRepository userRepository,
                                     PropertyRepository propertyRepository,
-                                    LeaseRepository leaseRepository) {
+                                    LeaseRepository leaseRepository,
+                                    TenantRepository tenantRepository,
+                                    LeaseService leaseService) {
         this.rentalRequestRepository = rentalRequestRepository;
         this.userRepository = userRepository;
         this.propertyRepository = propertyRepository;
         this.leaseRepository = leaseRepository;
+        this.tenantRepository = tenantRepository;
+        this.leaseService = leaseService;
     }
 
     @Override
@@ -116,6 +128,12 @@ public class RentalRequestServiceImpl implements RentalRequestService {
             if (!isPropertyAvailable(property)) {
                 throw new RuntimeException("Property is no longer available");
             }
+
+            createLeaseForAcceptedRequest(rentalRequest, property);
+
+            property.setStatus(PropertyStatus.RENTED);
+            propertyRepository.save(property);
+
             rentalRequest.setStatus(RentalRequestStatus.ACCEPTED);
 
         } else if (decision == RentalRequestStatus.REJECTED) {
@@ -133,21 +151,48 @@ public class RentalRequestServiceImpl implements RentalRequestService {
         return toResponse(rentalRequestRepository.save(rentalRequest));
     }
 
+    private void createLeaseForAcceptedRequest(RentalRequest rentalRequest, Property property) {
+
+        User tenantUser = rentalRequest.getTenant();
+
+        Tenant tenant = tenantRepository.findByEmail(tenantUser.getEmail())
+                .orElseGet(() -> {
+                    Tenant newTenant = new Tenant();
+                    newTenant.setFullName(tenantUser.getFullName());
+                    newTenant.setEmail(tenantUser.getEmail());
+                    return tenantRepository.save(newTenant);
+                });
+
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.plusMonths(11);
+
+        Double monthlyRent = property.getMonthlyRent();
+        Double securityDeposit = property.getSecurityDeposit() != null
+                ? property.getSecurityDeposit()
+                : monthlyRent * 2;
+
+        LeaseRequest leaseRequest = new LeaseRequest();
+        leaseRequest.setPropertyId(property.getId());
+        leaseRequest.setTenantId(tenant.getId());
+        leaseRequest.setStartDate(startDate);
+        leaseRequest.setEndDate(endDate);
+        leaseRequest.setMonthlyRent(monthlyRent);
+        leaseRequest.setSecurityDeposit(securityDeposit);
+
+        leaseService.createLease(leaseRequest);
+    }
+
     private boolean isPropertyAvailable(Property property) {
 
         boolean alreadyAccepted = rentalRequestRepository
                 .existsByPropertyIdAndStatus(property.getId(), RentalRequestStatus.ACCEPTED);
 
-        boolean alreadyLeased = leaseRepository.findAll().stream()
-                .anyMatch(lease -> lease.getProperty() != null
-                        && lease.getProperty().getId().equals(property.getId())
-                        && isLeaseActive(lease.getEndDate()));
+        boolean alreadyLeased = leaseRepository
+                .existsByPropertyIdAndStatus(property.getId(), LeaseStatus.ACTIVE);
 
-        return !alreadyAccepted && !alreadyLeased;
-    }
+        boolean alreadyRented = property.getStatus() == PropertyStatus.RENTED;
 
-    private boolean isLeaseActive(LocalDate endDate) {
-        return endDate == null || !endDate.isBefore(LocalDate.now());
+        return !alreadyAccepted && !alreadyLeased && !alreadyRented;
     }
 
     private RentalRequestResponse toResponse(RentalRequest rentalRequest) {

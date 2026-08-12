@@ -1,6 +1,7 @@
 package com.smartlease.property.dto;
 
 import com.smartlease.property.enums.Furnishing;
+import com.smartlease.property.enums.PropertyStatus;
 import com.smartlease.property.enums.PropertyType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class PropertyResponse {
     private String pincode;
     private Integer totalUnits;
     private Double monthlyRent;
+    private Double securityDeposit;
     private String description;
     private PropertyType propertyType;
     private Integer bedrooms;
@@ -27,4 +29,5 @@ public class PropertyResponse {
     private Double areaSqft;
     private Long ownerId;
     private String ownerName;
+    private PropertyStatus status;
 }

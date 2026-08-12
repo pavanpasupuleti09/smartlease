@@ -3,12 +3,14 @@ package com.smartlease.lease.service;
 import com.smartlease.lease.dto.LeaseRequest;
 import com.smartlease.lease.dto.LeaseResponse;
 import com.smartlease.lease.entity.Lease;
+import com.smartlease.lease.enums.LeaseStatus;
 import com.smartlease.lease.repository.LeaseRepository;
 import com.smartlease.property.entity.Property;
 import com.smartlease.property.repository.PropertyRepository;
 import com.smartlease.tenant.entity.Tenant;
 import com.smartlease.tenant.repository.TenantRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -29,6 +31,7 @@ public class LeaseServiceImpl implements LeaseService {
     }
 
     @Override
+    @Transactional
     public LeaseResponse createLease(LeaseRequest request) {
 
         Property property = propertyRepository.findById(request.getPropertyId())
@@ -36,6 +39,10 @@ public class LeaseServiceImpl implements LeaseService {
 
         Tenant tenant = tenantRepository.findById(request.getTenantId())
                 .orElseThrow(() -> new RuntimeException("Tenant not found"));
+
+        if (leaseRepository.existsByPropertyIdAndStatus(property.getId(), LeaseStatus.ACTIVE)) {
+            throw new RuntimeException("An active lease already exists for this property");
+        }
 
         Lease lease = new Lease();
 
@@ -57,7 +64,8 @@ public class LeaseServiceImpl implements LeaseService {
                 savedLease.getStartDate(),
                 savedLease.getEndDate(),
                 savedLease.getMonthlyRent(),
-                savedLease.getSecurityDeposit()
+                savedLease.getSecurityDeposit(),
+                savedLease.getStatus()
         );
     }
 
@@ -75,7 +83,8 @@ public class LeaseServiceImpl implements LeaseService {
                         lease.getStartDate(),
                         lease.getEndDate(),
                         lease.getMonthlyRent(),
-                        lease.getSecurityDeposit()
+                        lease.getSecurityDeposit(),
+                        lease.getStatus()
                 ))
                 .toList();
     }
@@ -95,7 +104,8 @@ public class LeaseServiceImpl implements LeaseService {
                 lease.getStartDate(),
                 lease.getEndDate(),
                 lease.getMonthlyRent(),
-                lease.getSecurityDeposit()
+                lease.getSecurityDeposit(),
+                lease.getStatus()
         );
     }
 
@@ -129,7 +139,8 @@ public class LeaseServiceImpl implements LeaseService {
                 updatedLease.getStartDate(),
                 updatedLease.getEndDate(),
                 updatedLease.getMonthlyRent(),
-                updatedLease.getSecurityDeposit()
+                updatedLease.getSecurityDeposit(),
+                updatedLease.getStatus()
         );
     }
 

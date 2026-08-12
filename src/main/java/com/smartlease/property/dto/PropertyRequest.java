@@ -16,6 +16,7 @@ public class PropertyRequest {
     private String pincode;
     private Integer totalUnits;
     private Double monthlyRent;
+    private Double securityDeposit;
     private String description;
     private PropertyType propertyType;
     private Integer bedrooms;

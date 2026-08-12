@@ -1,5 +1,6 @@
 package com.smartlease.lease.dto;
 
+import com.smartlease.lease.enums.LeaseStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,4 +25,6 @@ public class LeaseResponse {
 
     private Double monthlyRent;
     private Double securityDeposit;
+
+    private LeaseStatus status;
 }
