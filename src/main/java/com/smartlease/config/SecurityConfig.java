@@ -24,7 +24,8 @@ public class SecurityConfig {
                                 "/api/tenants/**",
                                 "/api/leases/**",
                                 "/api/rents/**",
-                                "/api/maintenance/**"
+                                "/api/maintenance/**",
+                                "/api/rental-requests/**"
                         ).permitAll()
                         .anyRequest().authenticated()
 
