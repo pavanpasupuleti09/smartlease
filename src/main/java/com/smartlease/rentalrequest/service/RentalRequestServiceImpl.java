@@ -2,7 +2,6 @@ package com.smartlease.rentalrequest.service;
 
 import com.smartlease.auth.entity.User;
 import com.smartlease.auth.enums.Role;
-import com.smartlease.auth.repository.UserRepository;
 import com.smartlease.lease.dto.LeaseRequest;
 import com.smartlease.lease.enums.LeaseStatus;
 import com.smartlease.lease.repository.LeaseRepository;
@@ -28,20 +27,17 @@ import java.util.List;
 public class RentalRequestServiceImpl implements RentalRequestService {
 
     private final RentalRequestRepository rentalRequestRepository;
-    private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final LeaseRepository leaseRepository;
     private final TenantRepository tenantRepository;
     private final LeaseService leaseService;
 
     public RentalRequestServiceImpl(RentalRequestRepository rentalRequestRepository,
-                                    UserRepository userRepository,
                                     PropertyRepository propertyRepository,
                                     LeaseRepository leaseRepository,
                                     TenantRepository tenantRepository,
                                     LeaseService leaseService) {
         this.rentalRequestRepository = rentalRequestRepository;
-        this.userRepository = userRepository;
         this.propertyRepository = propertyRepository;
         this.leaseRepository = leaseRepository;
         this.tenantRepository = tenantRepository;
@@ -50,10 +46,7 @@ public class RentalRequestServiceImpl implements RentalRequestService {
 
     @Override
     @Transactional
-    public RentalRequestResponse createRequest(RentalRequestRequest request) {
-
-        User tenant = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Tenant not found"));
+    public RentalRequestResponse createRequest(User tenant, RentalRequestRequest request) {
 
         if (tenant.getRole() != Role.TENANT) {
             throw new RuntimeException("Only users with TENANT role can create rental requests");

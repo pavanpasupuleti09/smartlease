@@ -31,5 +31,9 @@ jwt:
   secret: mySecretKeyForSmartLeaseProject2026MySecretKey123456
   expiration: 86400000
 
+razorpay:
+  key-id: ""
+  key-secret: ""
+
 app:
   upload-dir: ./uploads/properties

@@ -1,8 +1,10 @@
 package com.smartlease.property.controller;
 
+import com.smartlease.auth.entity.User;
 import com.smartlease.property.dto.PropertyImageResponse;
 import com.smartlease.property.service.PropertyImageService;
 import org.springframework.core.io.Resource;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,9 +28,10 @@ public class PropertyImageController {
             @PathVariable Long propertyId,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "isPrimary", defaultValue = "false") boolean isPrimary,
-            @RequestParam(value = "sortOrder", required = false) Integer sortOrder) {
+            @RequestParam(value = "sortOrder", required = false) Integer sortOrder,
+            @AuthenticationPrincipal User user) {
 
-        return imageService.uploadImage(propertyId, file, isPrimary, sortOrder);
+        return imageService.uploadImage(propertyId, file, isPrimary, sortOrder, user);
     }
 
     @GetMapping("/{propertyId}/images")
@@ -49,13 +52,15 @@ public class PropertyImageController {
     }
 
     @PutMapping("/images/{imageId}/primary")
-    public PropertyImageResponse setPrimary(@PathVariable Long imageId) {
-        return imageService.setPrimary(imageId);
+    public PropertyImageResponse setPrimary(@PathVariable Long imageId,
+                                            @AuthenticationPrincipal User user) {
+        return imageService.setPrimary(imageId, user);
     }
 
     @DeleteMapping("/images/{imageId}")
-    public String deleteImage(@PathVariable Long imageId) {
-        imageService.deleteImage(imageId);
+    public String deleteImage(@PathVariable Long imageId,
+                              @AuthenticationPrincipal User user) {
+        imageService.deleteImage(imageId, user);
         return "Image Deleted Successfully";
     }
 }

@@ -1,6 +1,7 @@
 package com.smartlease.property.service;
 
 import com.smartlease.auth.entity.User;
+import com.smartlease.auth.enums.Role;
 import com.smartlease.auth.repository.UserRepository;
 import com.smartlease.property.dto.PropertyRequest;
 import com.smartlease.property.dto.PropertyResponse;
@@ -23,7 +24,7 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PropertyResponse createProperty(PropertyRequest request) {
+    public PropertyResponse createProperty(PropertyRequest request, User caller) {
 
         Property property = new Property();
 
@@ -41,7 +42,7 @@ public class PropertyServiceImpl implements PropertyService {
         property.setBathrooms(request.getBathrooms());
         property.setFurnishing(request.getFurnishing());
         property.setAreaSqft(request.getAreaSqft());
-        property.setOwner(resolveOwner(request.getOwnerId()));
+        property.setOwner(resolveOwnerFor(caller, request.getOwnerId(), null));
 
         Property savedProperty = propertyRepository.save(property);
 
@@ -67,10 +68,12 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PropertyResponse updateProperty(Long id, PropertyRequest request) {
+    public PropertyResponse updateProperty(Long id, PropertyRequest request, User caller) {
 
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property Not Found"));
+
+        assertCanModify(property, caller, "update");
 
         property.setPropertyName(request.getPropertyName());
         property.setAddress(request.getAddress());
@@ -86,7 +89,7 @@ public class PropertyServiceImpl implements PropertyService {
         property.setBathrooms(request.getBathrooms());
         property.setFurnishing(request.getFurnishing());
         property.setAreaSqft(request.getAreaSqft());
-        property.setOwner(resolveOwner(request.getOwnerId()));
+        property.setOwner(resolveOwnerFor(caller, request.getOwnerId(), property.getOwner()));
 
         Property updatedProperty = propertyRepository.save(property);
 
@@ -94,12 +97,29 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public void deleteProperty(Long id) {
+    public void deleteProperty(Long id, User caller) {
 
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property not found"));
 
+        assertCanModify(property, caller, "delete");
+
         propertyRepository.delete(property);
+    }
+
+    /**
+     * Only the property owner or an ADMIN may modify or delete a property.
+     * A property with no owner can only be managed by an ADMIN.
+     */
+    private void assertCanModify(Property property, User caller, String action) {
+
+        boolean isOwner = property.getOwner() != null
+                && property.getOwner().getId().equals(caller.getId());
+        boolean isAdmin = caller.getRole() == Role.ADMIN;
+
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("Only the owner of the property can " + action + " this property");
+        }
     }
 
     @Override
@@ -111,9 +131,23 @@ public class PropertyServiceImpl implements PropertyService {
                 .toList();
     }
 
-    private User resolveOwner(Long ownerId) {
-        return userRepository.findById(ownerId)
-                .orElseThrow(() -> new RuntimeException("Owner Not Found"));
+    /**
+     * The property owner is the authenticated caller. Only an ADMIN may designate a
+     * different owner via the request body. A supplied ownerId is never honored for
+     * non-admin callers.
+     */
+    private User resolveOwnerFor(User caller, Long requestedOwnerId, User currentOwner) {
+
+        if (caller.getRole() == Role.ADMIN && requestedOwnerId != null) {
+            return userRepository.findById(requestedOwnerId)
+                    .orElseThrow(() -> new RuntimeException("Owner Not Found"));
+        }
+
+        if (caller.getRole() == Role.ADMIN && currentOwner != null) {
+            return currentOwner;
+        }
+
+        return caller;
     }
 
     private PropertyResponse toResponse(Property property) {

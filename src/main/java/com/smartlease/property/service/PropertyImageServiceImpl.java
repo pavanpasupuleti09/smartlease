@@ -1,5 +1,7 @@
 package com.smartlease.property.service;
 
+import com.smartlease.auth.entity.User;
+import com.smartlease.auth.enums.Role;
 import com.smartlease.property.dto.PropertyImageResponse;
 import com.smartlease.property.entity.Property;
 import com.smartlease.property.entity.PropertyImage;
@@ -42,10 +44,12 @@ public class PropertyImageServiceImpl implements PropertyImageService {
     }
 
     @Override
-    public PropertyImageResponse uploadImage(Long propertyId, MultipartFile file, boolean isPrimary, Integer sortOrder) {
+    public PropertyImageResponse uploadImage(Long propertyId, MultipartFile file, boolean isPrimary, Integer sortOrder, User caller) {
 
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new RuntimeException("Property Not Found"));
+
+        assertCanManage(property, caller);
 
         if (imageRepository.countByPropertyId(propertyId) >= MAX_IMAGES_PER_PROPERTY) {
             throw new RuntimeException("Maximum of " + MAX_IMAGES_PER_PROPERTY + " images allowed per property");
@@ -119,10 +123,12 @@ public class PropertyImageServiceImpl implements PropertyImageService {
     }
 
     @Override
-    public PropertyImageResponse setPrimary(Long imageId) {
+    public PropertyImageResponse setPrimary(Long imageId, User caller) {
 
         PropertyImage image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("Image Not Found"));
+
+        assertCanManage(image.getProperty(), caller);
 
         unsetPrimary(image.getProperty().getId());
         image.setPrimary(true);
@@ -131,10 +137,12 @@ public class PropertyImageServiceImpl implements PropertyImageService {
     }
 
     @Override
-    public void deleteImage(Long imageId) {
+    public void deleteImage(Long imageId, User caller) {
 
         PropertyImage image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("Image Not Found"));
+
+        assertCanManage(image.getProperty(), caller);
 
         try {
             Files.deleteIfExists(Paths.get(uploadDir, image.getFilePath()));
@@ -143,6 +151,21 @@ public class PropertyImageServiceImpl implements PropertyImageService {
         }
 
         imageRepository.delete(image);
+    }
+
+    /**
+     * Only the property owner or an ADMIN may manage a property's images.
+     * A property with no owner can only have its images managed by an ADMIN.
+     */
+    private void assertCanManage(Property property, User caller) {
+
+        boolean isOwner = property.getOwner() != null
+                && property.getOwner().getId().equals(caller.getId());
+        boolean isAdmin = caller.getRole() == Role.ADMIN;
+
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("Only the owner of the property can manage its images");
+        }
     }
 
     private void unsetPrimary(Long propertyId) {

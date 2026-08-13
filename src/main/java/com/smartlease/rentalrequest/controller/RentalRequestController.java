@@ -1,9 +1,11 @@
 package com.smartlease.rentalrequest.controller;
 
+import com.smartlease.auth.entity.User;
 import com.smartlease.rentalrequest.dto.RentalRequestRequest;
 import com.smartlease.rentalrequest.dto.RentalRequestRespondRequest;
 import com.smartlease.rentalrequest.dto.RentalRequestResponse;
 import com.smartlease.rentalrequest.service.RentalRequestService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,28 +21,32 @@ public class RentalRequestController {
     }
 
     @PostMapping
-    public RentalRequestResponse createRentalRequest(@RequestBody RentalRequestRequest request) {
-        return rentalRequestService.createRequest(request);
+    public RentalRequestResponse createRentalRequest(@RequestBody RentalRequestRequest request,
+                                                     @AuthenticationPrincipal User user) {
+        return rentalRequestService.createRequest(user, request);
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public List<RentalRequestResponse> getRequestsByTenant(@PathVariable Long tenantId) {
-        return rentalRequestService.getRequestsByTenant(tenantId);
+    public List<RentalRequestResponse> getRequestsByTenant(@PathVariable Long tenantId,
+                                                           @AuthenticationPrincipal User user) {
+        return rentalRequestService.getRequestsByTenant(user.getId());
     }
 
     @GetMapping("/owner/{ownerId}")
-    public List<RentalRequestResponse> getRequestsByOwner(@PathVariable Long ownerId) {
-        return rentalRequestService.getRequestsByOwner(ownerId);
+    public List<RentalRequestResponse> getRequestsByOwner(@PathVariable Long ownerId,
+                                                          @AuthenticationPrincipal User user) {
+        return rentalRequestService.getRequestsByOwner(user.getId());
     }
 
     @PutMapping("/{requestId}/respond")
     public RentalRequestResponse respondToRequest(
             @PathVariable Long requestId,
-            @RequestBody RentalRequestRespondRequest request) {
+            @RequestBody RentalRequestRespondRequest request,
+            @AuthenticationPrincipal User user) {
 
         return rentalRequestService.respondToRequest(
                 requestId,
-                request.getOwnerId(),
+                user.getId(),
                 request.getDecision(),
                 request.getRejectionReason()
         );

@@ -4,6 +4,7 @@ import com.smartlease.auth.dto.AuthResponse;
 import com.smartlease.auth.dto.LoginRequest;
 import com.smartlease.auth.dto.RegistrationRequest;
 import com.smartlease.auth.entity.User;
+import com.smartlease.auth.enums.Role;
 import com.smartlease.auth.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void registerUser(RegistrationRequest request) {
+
+        if (request.getRole() == Role.ADMIN) {
+            throw new RuntimeException("Invalid role: ADMIN cannot be self-registered");
+        }
 
         Optional<User> existingUser =
                 userRepository.findByEmail(request.getEmail());
