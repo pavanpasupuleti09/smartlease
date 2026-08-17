@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLease - Razorpay Checkout Test</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f4f6f9;
+            color: #1a202c;
+            display: flex;
+            justify-content: center;
+            padding: 40px 16px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            padding: 32px;
+            width: 100%;
+            max-width: 560px;
+        }
+
+        h1 {
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .test-mode {
+            background: #ffed4a;
+            color: #333;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        .order-summary {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            font-size: 14px;
+        }
+
+        .order-summary .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 6px 0;
+        }
+
+        .order-summary .row .label {
+            color: #718096;
+        }
+
+        .order-summary .row .value {
+            font-weight: 600;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            word-break: break-all;
+            text-align: right;
+        }
+
+        .order-summary .row .value.amount {
+            font-size: 18px;
+            color: #2f855a;
+        }
+
+        #rzp-button {
+            width: 100%;
+            background: #2f855a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        #rzp-button:hover {
+            background: #276749;
+        }
+
+        #rzp-button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        .section {
+            margin-top: 24px;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .section h2 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #success-section {
+            display: none;
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+        }
+
+        #success-section h2 {
+            color: #276749;
+        }
+
+        #error-section {
+            display: none;
+            background: #fff5f5;
+            border: 1px solid #fc8181;
+        }
+
+        #error-section h2 {
+            color: #c53030;
+        }
+
+        .result-row {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+
+        .result-row .key {
+            font-size: 12px;
+            color: #718096;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .result-row .value-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .result-row .value {
+            font-size: 13px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .error-field {
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .error-field .label {
+            color: #718096;
+            font-size: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .error-field .value {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            word-break: break-all;
+            margin-top: 2px;
+        }
+
+        .note {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #a0aec0;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <h1>
+        SmartLease Payment
+        <span class="test-mode">TEST MODE</span>
+    </h1>
+
+    <p class="subtitle">
+        Frontend-only Razorpay Checkout — existing order, no backend API calls
+    </p>
+
+    <div class="order-summary">
+
+        <div class="row">
+            <span class="label">Order ID</span>
+            <span class="value">order_TQuGwjjBYRVlYz</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Amount</span>
+            <span class="value amount">₹18,000</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Currency</span>
+            <span class="value">INR</span>
+        </div>
+
+    </div>
+
+    <button id="rzp-button">Pay ₹18,000</button>
+
+    <div id="success-section" class="section">
+
+        <h2>Payment Successful — Copy These Values</h2>
+
+        <div class="result-row">
+            <div class="key">razorpay_payment_id</div>
+
+            <div class="value-row">
+                <span class="value" id="val-payment-id">-</span>
+                <button class="copy-btn" data-copy="val-payment-id">
+                    Copy Payment ID
+                </button>
+            </div>
+        </div>
+
+        <div class="result-row">
+            <div class="key">razorpay_order_id</div>
+
+            <div class="value-row">
+                <span class="value" id="val-order-id">-</span>
+                <button class="copy-btn" data-copy="val-order-id">
+                    Copy Order ID
+                </button>
+            </div>
+        </div>
+
+        <div class="result-row">
+            <div class="key">razorpay_signature</div>
+
+            <div class="value-row">
+                <span class="value" id="val-signature">-</span>
+                <button class="copy-btn" data-copy="val-signature">
+                    Copy Signature
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="error-section" class="section">
+
+        <h2>Payment Failed — Razorpay Error Details</h2>
+
+        <div class="error-field">
+            <div class="label">code</div>
+            <div class="value" id="err-code">-</div>
+        </div>
+
+        <div class="error-field">
+            <div class="label">description</div>
+            <div class="value" id="err-description">-</div>
+        </div>
+
+        <div class="error-field">
+            <div class="label">reason</div>
+            <div class="value" id="err-reason">-</div>
+        </div>
+
+        <div class="error-field">
+            <div class="label">source</div>
+            <div class="value" id="err-source">-</div>
+        </div>
+
+    </div>
+
+    <p class="note">
+        This page does NOT call the SmartLease backend.
+        It opens Razorpay Checkout against the existing TEST order
+        and displays the raw response.
+        Open the browser DevTools Console to see the full logged response objects.
+    </p>
+
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+
+    // ============================================================
+    // Existing TEST-MODE values
+    // ============================================================
+
+    const RAZORPAY_TEST_KEY = "rzp_test_TPGgadrGb25XPT";
+
+    // FRESH ORDER CREATED VIA POST /api/payments/order (lease 1, MONTHLY_RENT)
+    const RAZORPAY_ORDER_ID = "order_TQuGwjjBYRVlYz";
+
+    const AMOUNT = 1800000; // ₹18,000 in paise
+    const CURRENCY = "INR";
+
+    const rzpButton = document.getElementById("rzp-button");
+
+
+    // ---------- copy helpers ----------
+
+    function copyText(text, btn) {
+
+        const done = function () {
+
+            const original = btn.textContent;
+
+            btn.textContent = "Copied!";
+
+            setTimeout(function () {
+                btn.textContent = original;
+            }, 1500);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+
+            navigator.clipboard
+                .writeText(text)
+                .then(done)
+                .catch(function () {
+                    fallbackCopy(text, done);
+                });
+
+        } else {
+
+            fallbackCopy(text, done);
+
+        }
+    }
+
+
+    function fallbackCopy(text, done) {
+
+        const ta = document.createElement("textarea");
+
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+
+        document.body.appendChild(ta);
+
+        ta.focus();
+        ta.select();
+
+        try {
+
+            document.execCommand("copy");
+
+        } catch (e) {
+
+            console.error("Copy failed:", e);
+
+        }
+
+        document.body.removeChild(ta);
+
+        done();
+    }
+
+
+    document.querySelectorAll(".copy-btn").forEach(function (btn) {
+
+        btn.addEventListener("click", function () {
+
+            const sourceId = btn.getAttribute("data-copy");
+
+            const text =
+                document.getElementById(sourceId).textContent;
+
+            if (text && text !== "-") {
+
+                copyText(text, btn);
+
+            }
+
+        });
+
+    });
+
+
+    // ---------- display helpers ----------
+
+    function showSuccess(response) {
+
+        document.getElementById("val-payment-id").textContent =
+            response.razorpay_payment_id;
+
+        document.getElementById("val-order-id").textContent =
+            response.razorpay_order_id;
+
+        document.getElementById("val-signature").textContent =
+            response.razorpay_signature;
+
+        document.getElementById("success-section").style.display =
+            "block";
+
+        document.getElementById("error-section").style.display =
+            "none";
+    }
+
+
+    function showError(error) {
+
+        document.getElementById("err-code").textContent =
+            error.code || "-";
+
+        document.getElementById("err-description").textContent =
+            error.description || "-";
+
+        document.getElementById("err-reason").textContent =
+            error.reason || "-";
+
+        document.getElementById("err-source").textContent =
+            error.source || "-";
+
+        document.getElementById("error-section").style.display =
+            "block";
+
+        document.getElementById("success-section").style.display =
+            "none";
+    }
+
+
+    // ---------- checkout ----------
+
+    rzpButton.addEventListener("click", function () {
+
+        const options = {
+
+            key: RAZORPAY_TEST_KEY,
+
+            amount: AMOUNT,
+
+            currency: CURRENCY,
+
+            order_id: RAZORPAY_ORDER_ID,
+
+            name: "SmartLease",
+
+            description: "Rent Payment - TEST MODE",
+
+            prefill: {
+                name: "Shiva Sai Pavan",
+                email: "shiva@gmail.com"
+            },
+
+            theme: {
+                color: "#3399cc"
+            },
+
+            handler: function (response) {
+
+                console.log("Checkout payment success");
+
+                console.log(
+                    "Full success response:",
+                    response
+                );
+
+                showSuccess(response);
+            },
+
+            modal: {
+
+                ondismiss: function () {
+
+                    console.log(
+                        "Checkout dismissed (closed without payment)"
+                    );
+
+                }
+
+            }
+
+        };
+
+
+        const razorpay = new Razorpay(options);
+
+
+        razorpay.on("payment.failed", function (response) {
+
+            console.log("Checkout payment failure");
+
+            console.log(
+                "Full failure response:",
+                response
+            );
+
+            console.error(
+                "Razorpay error object:",
+                response.error
+            );
+
+            showError(response.error || {});
+
+        });
+
+
+        console.log("Checkout opened");
+
+        razorpay.open();
+
+    });
+
+</script>
+
+</body>
+</html>
