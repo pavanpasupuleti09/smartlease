@@ -11,24 +11,32 @@ import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
 import { formatCurrency, formatDate } from '../../utils/format.js';
 
 export default function Rent() {
-  const { lease, rents, loading, error, refetch } = useTenantData();
+  const { lease, rents, payments, loading, error, refetch } = useTenantData();
   const toast = useToast();
-  const [busy, setBusy] = useState(false);
+  // Which payment type is currently being processed (or null when idle).
+  const [busy, setBusy] = useState(null);
 
   if (loading) return <LoadingSpinner label="Loading rent…" />;
   if (error) return <ErrorState message={error} onRetry={refetch} />;
 
   const currentRent = lease?.monthlyRent ?? null;
-  const latest = rents[0] || null;
+  const deposit = lease?.securityDeposit ?? null;
+  // Newest rent record first so status/history always reflect the latest payment.
+  const sortedRents = [...rents].sort((a, b) => b.id - a.id);
+  const latest = sortedRents[0] || null;
   const dueDate = latest?.dueDate || null;
   const status = latest?.paymentStatus || (lease ? 'PENDING' : null);
 
-  const handlePay = async () => {
+  const depositPaid = payments.some(
+    (p) => p.paymentType === 'SECURITY_DEPOSIT' && p.status === 'PAID'
+  );
+
+  const handlePay = async (type) => {
     if (!lease) return;
-    setBusy(true);
+    setBusy(type);
     try {
       // 1. Create the order through the existing backend Razorpay integration.
-      const orderRes = await paymentService.createOrder(lease.id, 'MONTHLY_RENT');
+      const orderRes = await paymentService.createOrder(lease.id, type);
       const order = orderRes.data;
 
       // 2. Open Razorpay Checkout with the backend-provided key + order.
@@ -37,21 +45,28 @@ export default function Rent() {
         order_id: order.orderId,
         amount: Math.round(order.amount * 100), // backend amount is in rupees
         currency: order.currency,
+        description: type === 'SECURITY_DEPOSIT' ? 'Security Deposit Payment' : 'Rent Payment',
       });
 
-      // 3. Verify with the backend.
+      // 3. Verify with the backend. The UI only updates after the signature is
+      //    verified and the payment is marked PAID server-side — closing the
+      //    Razorpay popup alone does not count as a successful payment.
       await paymentService.verifyPayment({
         razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_signature: response.razorpay_signature,
       });
 
-      toast.success('Payment successful! Your rent has been updated.');
+      toast.success(
+        type === 'SECURITY_DEPOSIT'
+          ? 'Security deposit paid!'
+          : 'Payment successful! Your rent has been updated.'
+      );
       refetch();
     } catch (err) {
       toast.error(err.message || 'Payment failed. Please try again.');
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
@@ -73,12 +88,48 @@ export default function Rent() {
                 : 'No active lease to pay rent for.'}
             </div>
           </div>
-          <button className="btn btn-primary" onClick={handlePay} disabled={busy || !lease}>
-            {busy ? 'Processing…' : 'Pay Rent'}
+          <button
+            className="btn btn-primary"
+            onClick={() => handlePay('MONTHLY_RENT')}
+            disabled={busy !== null || !lease}
+          >
+            {busy === 'MONTHLY_RENT' ? 'Processing…' : 'Pay Rent'}
           </button>
         </div>
         <div className="alert alert-info mt-16">
           You will be redirected to Razorpay Checkout to complete the payment securely.
+        </div>
+      </div>
+
+      <div className="card mb-24">
+        <div className="flex-between">
+          <div>
+            <div className="card-title">Security Deposit</div>
+            <div className="card-subtitle">
+              {lease
+                ? `Lease #${lease.id} — ${formatCurrency(deposit)} refundable deposit`
+                : 'No active lease to pay a deposit for.'}
+            </div>
+          </div>
+          <div className="flex gap-12" style={{ alignItems: 'center' }}>
+            <StatusBadge value={depositPaid ? 'PAID' : 'PENDING'} />
+            <button
+              className="btn btn-secondary"
+              onClick={() => handlePay('SECURITY_DEPOSIT')}
+              disabled={busy !== null || !lease || depositPaid}
+            >
+              {busy === 'SECURITY_DEPOSIT'
+                ? 'Processing…'
+                : depositPaid
+                  ? 'Deposit Paid'
+                  : 'Pay Security Deposit'}
+            </button>
+          </div>
+        </div>
+        <div className="alert alert-info mt-16">
+          {depositPaid
+            ? 'Your security deposit has been paid and recorded as a separate transaction.'
+            : 'You will be redirected to Razorpay Checkout to pay the security deposit securely.'}
         </div>
       </div>
 
@@ -93,7 +144,7 @@ export default function Rent() {
             { key: 'paid', label: 'Paid Date', render: (r) => formatDate(r.paidDate) },
             { key: 'status', label: 'Status', render: (r) => <StatusBadge value={r.paymentStatus} /> },
           ]}
-          rows={rents}
+          rows={sortedRents}
           emptyTitle="No rent records"
           emptyMessage="Rent records will appear here once created."
         />

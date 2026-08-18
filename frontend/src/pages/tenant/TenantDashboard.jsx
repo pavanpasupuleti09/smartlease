@@ -23,6 +23,63 @@ export default function TenantDashboard() {
   );
   const paidTotal = payments.filter((p) => p.status === 'PAID').reduce((s, p) => s + p.amount, 0);
 
+  // Without an active lease, rent/payment figures would be misleading, so the
+  // dashboard switches to a property-discovery focus instead.
+  if (!lease) {
+    return (
+      <div>
+        <div className="card browse-hero">
+          <div className="browse-hero-icon">🏠</div>
+          <div>
+            <div className="browse-hero-title">No active property</div>
+            <div className="browse-hero-sub">Find your next home from available properties on SmartLease.</div>
+          </div>
+          <Link className="btn btn-primary btn-lg" to="/app/tenant/rental-requests">
+            Browse Properties
+          </Link>
+        </div>
+
+        <div className="grid grid-2">
+          <div className="card">
+            <div className="card-title">My Property</div>
+            <div className="card-subtitle">Your current lease</div>
+            <div className="state-block mt-16">
+              <div className="state-icon">🔑</div>
+              <div className="state-title">No active property</div>
+              <div className="state-sub">Find your next home from available properties.</div>
+              <Link className="btn btn-primary mt-16" to="/app/tenant/rental-requests">
+                Browse Properties
+              </Link>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="flex-between">
+              <div>
+                <div className="card-title">Rental Requests</div>
+                <div className="card-subtitle">Your requests to properties</div>
+              </div>
+              <Link className="btn btn-secondary btn-sm" to="/app/tenant/rental-requests">
+                Manage
+              </Link>
+            </div>
+            <DataTable
+              className="mt-16"
+              columns={[
+                { key: 'property', label: 'Property', render: (r) => r.propertyName },
+                { key: 'status', label: 'Status', render: (r) => <StatusBadge value={r.status} /> },
+                { key: 'date', label: 'Requested', render: (r) => formatDate(r.createdAt) },
+              ]}
+              rows={rentalRequests.slice(0, 5)}
+              emptyTitle="No rental requests"
+              emptyMessage="Browse properties and send a request to get started."
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="stat-grid">
@@ -48,8 +105,7 @@ export default function TenantDashboard() {
               View details
             </Link>
           </div>
-          {property ? (
-            <div className="detail-list mt-16">
+          <div className="detail-list mt-16">
               <div className="detail-item">
                 <div className="detail-label">Property</div>
                 <div className="detail-value">{property.propertyName}</div>
@@ -82,10 +138,7 @@ export default function TenantDashboard() {
                   </div>
                 </>
               )}
-            </div>
-          ) : (
-            <div className="state-sub mt-16">No active lease found.</div>
-          )}
+          </div>
         </div>
 
         <div className="card">

@@ -34,3 +34,7 @@ build/
 
 ### Uploads ###
 uploads/
+.DS_Store
+node_modules/
+target/
+frontend/dist/

@@ -34,6 +34,8 @@ export default function AuthenticatedImage({ imageId, alt = '', style, fallback 
   }, [imageId]);
 
   if (failed) return fallback;
-  if (!url) return null;
+  // While the authenticated fetch is in flight, render the fallback (if any)
+  // so callers can show a placeholder instead of an empty gap.
+  if (!url) return fallback;
   return <img src={url} alt={alt} style={style} />;
 }

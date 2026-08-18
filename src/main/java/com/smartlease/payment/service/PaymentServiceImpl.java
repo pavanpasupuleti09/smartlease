@@ -17,11 +17,14 @@ import com.smartlease.payment.entity.Payment;
 import com.smartlease.payment.enums.PaymentStatus;
 import com.smartlease.payment.enums.PaymentType;
 import com.smartlease.payment.repository.PaymentRepository;
+import com.smartlease.rent.entity.Rent;
+import com.smartlease.rent.repository.RentRepository;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -31,15 +34,18 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final LeaseRepository leaseRepository;
+    private final RentRepository rentRepository;
     private final String razorpayKeyId;
     private final String razorpayKeySecret;
 
     public PaymentServiceImpl(PaymentRepository paymentRepository,
                               LeaseRepository leaseRepository,
+                              RentRepository rentRepository,
                               @Value("${razorpay.key-id:}") String razorpayKeyId,
                               @Value("${razorpay.key-secret:}") String razorpayKeySecret) {
         this.paymentRepository = paymentRepository;
         this.leaseRepository = leaseRepository;
+        this.rentRepository = rentRepository;
         this.razorpayKeyId = razorpayKeyId;
         this.razorpayKeySecret = razorpayKeySecret;
     }
@@ -198,8 +204,30 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setStatus(PaymentStatus.PAID);
         payment.setPaidAt(LocalDateTime.now());
         payment.setUpdatedAt(LocalDateTime.now());
+        paymentRepository.save(payment);
 
-        return toResponse(paymentRepository.save(payment));
+        // A verified monthly rent payment also produces the rent record shown in
+        // the tenant's Rent History. Deposits intentionally stay payment-only so
+        // the two are distinguishable (MONTHLY_RENT vs SECURITY_DEPOSIT).
+        if (payment.getPaymentType() == PaymentType.MONTHLY_RENT) {
+            createRentRecord(payment);
+        }
+
+        return toResponse(payment);
+    }
+
+    /**
+     * Records a paid monthly rent for the lease. Amount always comes from the
+     * verified payment, never from the client.
+     */
+    private void createRentRecord(Payment payment) {
+        Rent rent = new Rent();
+        rent.setLease(payment.getLease());
+        rent.setAmount(payment.getAmount());
+        rent.setDueDate(LocalDate.now());
+        rent.setPaidDate(LocalDate.now());
+        rent.setPaymentStatus(PaymentStatus.PAID.name());
+        rentRepository.save(rent);
     }
 
     @Override

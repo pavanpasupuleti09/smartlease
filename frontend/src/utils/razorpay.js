@@ -19,7 +19,14 @@ function loadScript() {
   return scriptPromise;
 }
 
-export function openRazorpayCheckout({ key, order_id, amount, currency, name = 'SmartLease' }) {
+export function openRazorpayCheckout({
+  key,
+  order_id,
+  amount,
+  currency,
+  name = 'SmartLease',
+  description = 'Rent Payment',
+}) {
   return loadScript().then(
     (Razorpay) =>
       new Promise((resolve, reject) => {
@@ -29,7 +36,7 @@ export function openRazorpayCheckout({ key, order_id, amount, currency, name = '
           amount, // already in paise
           currency,
           name,
-          description: 'Rent Payment',
+          description,
           theme: { color: '#2563eb' },
           handler(response) {
             resolve(response);

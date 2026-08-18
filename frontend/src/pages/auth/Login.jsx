@@ -26,11 +26,18 @@ export default function Login() {
     try {
       const profile = await login(form.email.trim(), form.password);
       const from = location.state?.from;
-      if (from && from !== '/login') {
-        navigate(from, { replace: true });
-      } else {
-        navigate(HOME_BY_ROLE[profile.role] || '/login', { replace: true });
-      }
+      const home = HOME_BY_ROLE[profile.role] || '/login';
+      // `from` is the destination recorded on this /login entry, which may
+      // have been left over from a *previous* user's logout redirect (e.g. a
+      // TENANT's path stored while the page sat on /login). Only follow it
+      // when it belongs to the freshly logged-in user's own role area;
+      // otherwise a stale cross-role path would bounce them to /app/unauthorized.
+      const rolePath = `/app/${String(profile.role).toLowerCase()}`;
+      const canGoFrom =
+        typeof from === 'string' &&
+        from !== '/login' &&
+        (from === rolePath || from.startsWith(`${rolePath}/`));
+      navigate(canGoFrom ? from : home, { replace: true });
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {

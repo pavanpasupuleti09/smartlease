@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { propertyService } from '../../services/propertyService.js';
+import { propertyService, propertyImageService } from '../../services/propertyService.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import PhotoUploader from './PhotoUploader.jsx';
+import ConfirmModal from '../../components/common/ConfirmModal.jsx';
 import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
 
 const EMPTY = {
@@ -34,34 +36,63 @@ export default function PropertyForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
+  // Photos
+  const [existingImages, setExistingImages] = useState([]);
+  const [newFiles, setNewFiles] = useState([]);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null); // { current, total }
+
   useEffect(() => {
     if (!isEdit) return;
-    propertyService
-      .getById(id)
-      .then((res) => {
-        const p = res.data;
+    Promise.all([propertyService.getById(id), propertyImageService.getByProperty(id)])
+      .then(([p, imgs]) => {
+        const prop = p.data;
         setForm({
-          propertyName: p.propertyName || '',
-          address: p.address || '',
-          city: p.city || '',
-          state: p.state || '',
-          pincode: p.pincode || '',
-          totalUnits: p.totalUnits ?? '',
-          monthlyRent: p.monthlyRent ?? '',
-          securityDeposit: p.securityDeposit ?? '',
-          description: p.description || '',
-          propertyType: p.propertyType || 'APARTMENT',
-          bedrooms: p.bedrooms ?? '',
-          bathrooms: p.bathrooms ?? '',
-          furnishing: p.furnishing || 'UNFURNISHED',
-          areaSqft: p.areaSqft ?? '',
+          propertyName: prop.propertyName || '',
+          address: prop.address || '',
+          city: prop.city || '',
+          state: prop.state || '',
+          pincode: prop.pincode || '',
+          totalUnits: prop.totalUnits ?? '',
+          monthlyRent: prop.monthlyRent ?? '',
+          securityDeposit: prop.securityDeposit ?? '',
+          description: prop.description || '',
+          propertyType: prop.propertyType || 'APARTMENT',
+          bedrooms: prop.bedrooms ?? '',
+          bathrooms: prop.bathrooms ?? '',
+          furnishing: prop.furnishing || 'UNFURNISHED',
+          areaSqft: prop.areaSqft ?? '',
         });
+        setExistingImages(imgs.data || []);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id, isEdit]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const uploadNewPhotos = async (propertyId) => {
+    if (!newFiles.length) return null;
+    const hasCover = existingImages.some((img) => img.primary);
+    let firstError = null;
+    for (let i = 0; i < newFiles.length; i++) {
+      setUploadProgress({ current: i + 1, total: newFiles.length });
+      try {
+        await propertyImageService.upload(
+          propertyId,
+          newFiles[i],
+          // First photo becomes the cover when there is no cover yet.
+          i === 0 && !hasCover
+        );
+      } catch (err) {
+        firstError = firstError || err.message;
+        break;
+      }
+    }
+    setUploadProgress(null);
+    return firstError;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,12 +116,20 @@ export default function PropertyForm() {
       areaSqft: toNum(form.areaSqft),
     };
     try {
+      let propertyId;
       if (isEdit) {
         await propertyService.update(id, payload);
+        propertyId = id;
         toast.success('Property updated.');
       } else {
-        await propertyService.create(payload);
+        const res = await propertyService.create(payload);
+        propertyId = res.data.id;
         toast.success('Property created.');
+      }
+
+      const uploadError = await uploadNewPhotos(propertyId);
+      if (uploadError) {
+        toast.error(`Property saved, but some photos could not be uploaded: ${uploadError}`);
       }
       navigate('/app/owner/properties');
     } catch (err) {
@@ -100,7 +139,46 @@ export default function PropertyForm() {
     }
   };
 
+  const handleRemoveExisting = async () => {
+    if (!deleteTarget) return;
+    setImageBusy(true);
+    try {
+      await propertyImageService.remove(deleteTarget.id);
+      setExistingImages((imgs) => imgs.filter((img) => img.id !== deleteTarget.id));
+      toast.success('Photo removed.');
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err.message || 'Could not remove photo.');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  const handleSetPrimary = async (imageId) => {
+    setImageBusy(true);
+    try {
+      await propertyImageService.setPrimary(imageId);
+      setExistingImages((imgs) =>
+        imgs.map((img) => ({ ...img, primary: img.id === imageId }))
+      );
+      toast.success('Cover photo updated.');
+    } catch (err) {
+      toast.error(err.message || 'Could not update cover photo.');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner label="Loading property…" />;
+
+  const savingLabel =
+    uploadProgress && uploadProgress.total > 0
+      ? `Uploading photos (${uploadProgress.current}/${uploadProgress.total})…`
+      : busy
+        ? 'Saving…'
+        : isEdit
+          ? 'Save Changes'
+          : 'Create Property';
 
   return (
     <div className="card" style={{ maxWidth: 720 }}>
@@ -191,15 +269,37 @@ export default function PropertyForm() {
           <label className="form-label">Description</label>
           <textarea name="description" className="form-control" value={form.description} onChange={handleChange} />
         </div>
-        <div className="flex gap-8">
-          <button className="btn btn-primary" disabled={busy}>
-            {busy ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Property'}
+
+        <hr className="section-divider" />
+        <PhotoUploader
+          existing={existingImages}
+          newFiles={newFiles}
+          disabled={busy}
+          onAddFiles={(files) => setNewFiles((prev) => [...prev, ...files])}
+          onRemoveNew={(index) => setNewFiles((prev) => prev.filter((_, i) => i !== index))}
+          onRemoveExisting={(img) => setDeleteTarget(img)}
+          onSetPrimary={handleSetPrimary}
+        />
+
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" disabled={busy || imageBusy}>
+            {savingLabel}
           </button>
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('/app/owner/properties')}>
+          <button type="button" className="btn btn-secondary" onClick={() => navigate('/app/owner/properties')} disabled={busy}>
             Cancel
           </button>
         </div>
       </form>
+
+      <ConfirmModal
+        open={Boolean(deleteTarget)}
+        title="Remove photo?"
+        message={`This will permanently delete "${deleteTarget?.filename || 'this photo'}". This action cannot be undone.`}
+        danger
+        busy={imageBusy}
+        onConfirm={handleRemoveExisting}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
